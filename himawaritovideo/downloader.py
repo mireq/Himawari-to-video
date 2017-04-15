@@ -45,7 +45,6 @@ class Downloader(object):
 				yield url_template.format(**context)
 
 	def compose_image(self, urls):
-		urls = list(urls)
 		s = self.IMAGE_RESOLUTION * self.config.resolution
 		im = Image.new('RGB', (s, s))
 		try:
@@ -60,7 +59,6 @@ class Downloader(object):
 		except Exception as e:
 			print(e)
 			return None
-		print(urls)
 		im.save('/dev/shm/test.png')
 		return im
 
