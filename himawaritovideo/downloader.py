@@ -41,7 +41,7 @@ class Downloader(object):
 			for i, url in enumerate(urls):
 				response = requests.get(url, stream=True)
 				part = Image.open(response.raw)
-				im.paste(part, (i // 2 * self.IMAGE_RESOLUTION, i % 2 * self.IMAGE_RESOLUTION))
+				im.paste(part, ((i // self.config.resolution) * self.IMAGE_RESOLUTION, (i % self.config.resolution) * self.IMAGE_RESOLUTION))
 		except Exception as e:
 			print(e)
 			return im
