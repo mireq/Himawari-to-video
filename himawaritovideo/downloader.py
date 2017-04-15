@@ -2,6 +2,8 @@
 from __future__ import unicode_literals
 
 from datetime import timedelta
+from multiprocessing.dummy import Pool as ThreadPool
+
 import requests
 from PIL import Image
 
@@ -11,10 +13,12 @@ from .config import get_config
 class Downloader(object):
 	SECONDS_BETWEEN_FRAMES = 600
 	IMAGE_RESOLUTION = 550
+	POOL_SIZE = 16
 
 	def __init__(self):
 		self.config = get_config()
 		self.start_date = self.config.start_date
+		self.downloader_pool = ThreadPool(processes=self.POOL_SIZE)
 
 	def get_urls(self, frame_date):
 		url_template = 'http://himawari8-dl.nict.go.jp/himawari8/img/D531106/{resolution}d/550/{year}/{month}/{day}/{hour}{minute}00_{x}_{y}.png'
@@ -38,8 +42,8 @@ class Downloader(object):
 		s = self.IMAGE_RESOLUTION * self.config.resolution
 		im = Image.new('RGB', (s, s))
 		try:
-			for i, url in enumerate(urls):
-				response = requests.get(url, stream=True)
+			responses = self.downloader_pool.map(lambda url: requests.get(url, stream=True), urls)
+			for i, response in enumerate(responses):
 				part = Image.open(response.raw)
 				im.paste(part, ((i // self.config.resolution) * self.IMAGE_RESOLUTION, (i % self.config.resolution) * self.IMAGE_RESOLUTION))
 		except Exception as e:
