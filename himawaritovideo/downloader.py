@@ -24,7 +24,7 @@ class Downloader(object):
 		self.config = get_config()
 		self.start_date = self.config.start_date
 		self.downloader_pool = ThreadPool(processes=self.POOL_SIZE)
-		self.empty_image = Image.open(open(os.path.join(os.path.dirname(__file__), 'empty.png'), 'rb'), 'r')
+		self.empty_image = Image.open(open(os.path.join(os.path.dirname(__file__), 'empty.png'), 'rb'), 'r').convert('RGB')
 
 	def get_urls(self, frame_date):
 		url_template = 'http://himawari8-dl.nict.go.jp/himawari8/img/D531106/{resolution}d/550/{year}/{month}/{day}/{hour}{minute}00_{x}_{y}.png'
@@ -50,7 +50,7 @@ class Downloader(object):
 		try:
 			responses = self.downloader_pool.map(lambda url: requests.get(url, stream=True), urls)
 			for i, response in enumerate(responses):
-				part = Image.open(response.raw)
+				part = Image.open(response.raw).convert('RGB')
 				if ImageChops.difference(self.empty_image, part).getbbox() is None:
 					raise EmptyImageException()
 				im.paste(part, ((i // self.config.resolution) * self.IMAGE_RESOLUTION, (i % self.config.resolution) * self.IMAGE_RESOLUTION))
