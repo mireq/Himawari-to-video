@@ -14,6 +14,8 @@ from .config import get_config
 SECONDS_BETWEEN_FRAMES = 600
 IMAGE_RESOLUTION = 550
 POOL_SIZE = 16
+RETRY_COUNT = 8
+REQUEST_TIMEOUT = 10
 
 
 class EmptyImageException(Exception):
@@ -27,6 +29,13 @@ class Downloader(object):
 		self.__start_date = self.__config.start_date
 		self.__downloader_pool = ThreadPool(processes=POOL_SIZE)
 		self.__empty_image = Image.open(open(os.path.join(os.path.dirname(__file__), 'empty.png'), 'rb'), 'r').convert('RGB')
+
+	def __iter__(self):
+		for i in range(self.__config.frames):
+			frame_date = self.__start_date + timedelta(seconds=i*SECONDS_BETWEEN_FRAMES)
+			img = self.__compose_image(self.__get_urls(frame_date))
+			if img is not None:
+				yield img
 
 	def __get_urls(self, frame_date):
 		url_template = 'http://himawari8-dl.nict.go.jp/himawari8/img/D531106/{resolution}d/550/{year}/{month}/{day}/{hour}{minute}00_{x}_{y}.png'
@@ -50,10 +59,9 @@ class Downloader(object):
 		s = IMAGE_RESOLUTION * self.__config.resolution
 		im = Image.new('RGB', (s, s))
 		try:
-			responses = self.__downloader_pool.map(lambda url: requests.get(url, stream=True), urls)
-			for i, response in enumerate(responses):
-				part = Image.open(response.raw).convert('RGB')
-				if ImageChops.difference(self.__empty_image, part).getbbox() is None:
+			parts = self.__downloader_pool.map(self.__download_image, urls)
+			for i, part in enumerate(parts):
+				if part is None or ImageChops.difference(self.__empty_image, part).getbbox() is None:
 					raise EmptyImageException()
 				im.paste(part, ((i // self.__config.resolution) * IMAGE_RESOLUTION, (i % self.__config.resolution) * IMAGE_RESOLUTION))
 		except EmptyImageException:
@@ -63,9 +71,10 @@ class Downloader(object):
 			return None
 		return im
 
-	def __iter__(self):
-		for i in range(self.__config.frames):
-			frame_date = self.__start_date + timedelta(seconds=i*SECONDS_BETWEEN_FRAMES)
-			img = self.__compose_image(self.__get_urls(frame_date))
-			if img is not None:
-				yield img
+	def __download_image(self, url):
+		for i in range(RETRY_COUNT):
+			try:
+				return Image.open(requests.get(url, stream=True, timeout=REQUEST_TIMEOUT).raw).convert('RGB')
+			except Exception as e:
+				pass
+		return None
