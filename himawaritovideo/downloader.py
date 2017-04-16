@@ -59,7 +59,6 @@ class Downloader(object):
 		except Exception as e:
 			print(e)
 			return None
-		im.save('/dev/shm/test.png')
 		return im
 
 	def __iter__(self):
