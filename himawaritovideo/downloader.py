@@ -39,15 +39,13 @@ class Downloader(object):
 
 	def __get_urls(self, frame_date):
 		url_template = 'http://himawari8-dl.nict.go.jp/himawari8/img/D531106/{resolution}d/550/{year}/{month}/{day}/{hour}{minute}00_{x}_{y}.png'
-		year, month, day, hour = frame_date.strftime('%Y.%m.%d.%H').split('.')
-		minute = str(frame_date.minute // 10 * 10).zfill(2)
 		context = {
 			'resolution': self.__config.resolution,
-			'year': year,
-			'month': month,
-			'day': day,
-			'hour': hour,
-			'minute': minute,
+			'year': '%04d' % frame_date.year,
+			'month': '%02d' % frame_date.month,
+			'day': '%02d' % frame_date.day,
+			'hour': '%02d' % frame_date.hour,
+			'minute': '%02d' % (frame_date.minute // 10 * 10),
 		}
 		for x in range(self.__config.resolution):
 			for y in range(self.__config.resolution):
