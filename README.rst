@@ -9,9 +9,9 @@ This program creates video from himawari sattelite images.
 Requirements
 ^^^^^^^^^^^^
 
-requests - https://pypi.python.org/pypi/requests
-Pillow - https://pypi.python.org/pypi/Pillow
-working ffmpeg
+* requests - https://pypi.python.org/pypi/requests
+* Pillow - https://pypi.python.org/pypi/Pillow
+* working ffmpeg
 
 Usage
 -----
