@@ -11,19 +11,24 @@ FFMPEG_BIN = 'ffmpeg'
 
 class Renderer(object):
 	def __init__(self):
-		self.config = get_config()
-		self.ffmpeg = None
+		self.__config = get_config()
+		self.__ffmpeg = None
 
 	def render_video(self, frames):
 		for frame in frames:
-			self.render_frame(frame)
+			self.__render_frame(frame)
 
-	def render_frame(self, frame):
-		if self.ffmpeg is None:
-			self.initialize_ffmpeg(frame.size)
-		self.ffmpeg.stdin.write(frame.tobytes())
+	def flush(self):
+		self.__ffmpeg.stdin.close()
+		self.__ffmpeg.wait()
+		self.__ffmpeg = None
 
-	def initialize_ffmpeg(self, resolution):
+	def __render_frame(self, frame):
+		if self.__ffmpeg is None:
+			self.__initialize_ffmpeg(frame.size)
+		self.__ffmpeg.stdin.write(frame.tobytes())
+
+	def __initialize_ffmpeg(self, resolution):
 		command = [
 			FFMPEG_BIN,
 			'-f', 'rawvideo',
@@ -32,8 +37,8 @@ class Renderer(object):
 			'-i', '-',
 			'-an',
 		]
-		if self.config.forwarded_args:
-			command += self.config.forwarded_args
+		if self.__config.forwarded_args:
+			command += self.__config.forwarded_args
 		else:
 			command += [
 				'-y',
@@ -44,10 +49,5 @@ class Renderer(object):
 				'-preset', 'placebo',
 				'-level', '5.2',
 			]
-		command.append(self.config.output)
-		self.ffmpeg = subprocess.Popen(command, stdin=subprocess.PIPE)
-
-	def flush(self):
-		self.ffmpeg.stdin.close()
-		self.ffmpeg.wait()
-		self.ffmpeg = None
+		command.append(self.__config.output)
+		self.__ffmpeg = subprocess.Popen(command, stdin=subprocess.PIPE)
